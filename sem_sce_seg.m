@@ -1,10 +1,8 @@
 clear; clc; close all;
 
-
-vis = 1;
+vis = 0;
 img = imread('./train/1_23_s.bmp');
 mask = imread('./train/1_23_s_GT.bmp');
-
 %% 1.a) filter bank
 
 filtersize = 11;
@@ -29,7 +27,7 @@ filterbank(:,:,9) = Gy2;
 filterbank(:,:,10) = Gx4;
 filterbank(:,:,11) = Gy4;
 
-if vis == 1
+if vis == 1 || vis == 2
     figure(1);
     for i=1:11
         if i<=3
@@ -44,3 +42,24 @@ end
 %% 1.b) texton features - CIE Lab color space
 
 cielab = rgb2lab(img);
+
+rng(10);
+pixelx = randi(size(img,1)-filtersize+1, 100, 1);
+pixely = randi(size(img,2)-filtersize+1, 100, 1);
+
+featvecs = [];
+for i=1:length(pixelx)
+    vectmp = [];
+    for j=1:3
+        vectmp = [vectmp, reshape(sum(cielab(pixelx(i):pixelx(i)+filtersize-1, pixely(i):pixely(i)+filtersize-1,:).*filterbank(:,:,j), [1,2]), [1,3])];    
+    end
+    for j=4:11
+        vectmp = [vectmp, reshape(sum(cielab(pixelx(i):pixelx(i)+filtersize-1, pixely(i):pixely(i)+filtersize-1, 1).*filterbank(:,:,j), [1,2]), [1,1])];
+    end
+    featvecs = [featvecs; vectmp];
+end
+
+%% 1.c) kmeans
+[idx, center] = kmeans(featvecs, 100);
+
+%% 2 superpixel
